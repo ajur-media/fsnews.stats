@@ -1,0 +1,24 @@
+{
+    "name": "ajur-media/fsnews.stats",
+    "description": "FSNews Engine NViews collector",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "AJUR\\FSNews\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Karel Wintersky",
+            "email": "karel.wintersky@gmail.com"
+        }
+    ],
+    "require": {
+        "php": "^7.4",
+        "ext-pdo": "*"
+    },
+    "require-dev": {
+        "karelwintersky/arris": "^2.7"
+    }
+}
