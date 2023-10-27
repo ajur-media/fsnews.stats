@@ -7,6 +7,7 @@ class Logger
     private $pdo;
     private $table;
     private $extra_fields;
+    private $is_enabled_stream;
 
     public string $last_sql_query = '';
     public array $last_sql_conditions = [];
@@ -16,11 +17,12 @@ class Logger
      * @param string $table
      * @param array $extra_fields
      */
-    public function __construct($pdo_connection, string $table = '', array $extra_fields = [])
+    public function __construct($pdo_connection, string $table = '', array $extra_fields = [], bool $is_enabled = true)
     {
         $this->pdo = $pdo_connection;
         $this->table = $table;
         $this->extra_fields = $extra_fields;
+        $this->is_enabled_stream = $is_enabled;
 
         if (is_null($pdo_connection)) {
             throw new \RuntimeException(__CLASS__ . '->' . __METHOD__ . " can't use NULL PDO Connection");
@@ -42,20 +44,35 @@ class Logger
         if (empty($item_id)) {
             throw new \RuntimeException(__CLASS__ . '->' . __METHOD__ . " can't store data for empty item_id");
         }
+
         if ($date != 'NOW()') {
             if (false === \strtotime($date)) {
                 throw new \RuntimeException(__CLASS__ . '->' . __METHOD__ . " incorrect date: {$date}");
             }
         }
 
-        //@todo: добавить обработку extra_fields из конструктора и из этого метода
+        if (!$this->is_enabled_stream) {
+            return false;
+        }
 
-        $set = [
-            "item_id = :item_id",
-            "event_count = 1",
-            "event_date = {$date}"
-        ];
-        $set = \array_merge($set, $this->extra_fields);
+        if (!empty($this->extra_fields) || !empty($extra_fields)) {
+            $set = \array_merge([
+                "item_id"       =>  ":item_id",
+                "event_count"   =>  1,
+                "event_date"    =>  "{$date}"
+            ], $this->extra_fields, $extra_fields);
+
+            $set = \array_map(static function($key, $value) {
+                return "{$key} = {$value}";
+            }, \array_keys($set), \array_values($set));
+
+        } else {
+            $set = [
+                "item_id = :item_id",
+                "event_count = 1",
+                "event_date = {$date}"
+            ];
+        }
 
         $this->last_sql_query
             = " INSERT INTO {$this->table} SET "

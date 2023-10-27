@@ -28,19 +28,23 @@ class NViews
 
     private static $allow_lazy_stream_creation = false;
 
+    private static $is_enabled = true;
+
     /**
      * Инициализирует значения по-умолчанию для системы статистики
      *
      * @param null $default_pdo_connection
      * @param string $default_table
      * @param bool $allow_lazy_stream_creation
+     * @param bool $is_enabled (global is_enabled)
      * @return void
      */
-    public static function init($default_pdo_connection = null, string $default_table = '', bool $allow_lazy_stream_creation = true)
+    public static function init($default_pdo_connection = null, string $default_table = '', bool $allow_lazy_stream_creation = true, bool $is_enabled = true)
     {
         self::$default_pdo_connection = $default_pdo_connection;
         self::$default_table = $default_table;
         self::$allow_lazy_stream_creation = $allow_lazy_stream_creation;
+        self::$is_enabled = $is_enabled;
     }
 
     /**
@@ -52,14 +56,14 @@ class NViews
      * @param array $extra_fields
      * @return void
      */
-    public static function addStream(string $name = 'default', $pdo_connection = null, string $table = '', array $extra_fields = [])
+    public static function addStream(string $name = 'default', $pdo_connection = null, string $table = '', array $extra_fields = [], bool $is_enabled = true)
     {
         if (is_null($pdo_connection)) {
             $pdo_connection = self::$default_pdo_connection;
         }
 
         if (!in_array($name, self::$streams)) {
-            self::$streams[ $name ] = new Logger($pdo_connection, $table, $extra_fields);
+            self::$streams[ $name ] = new Logger($pdo_connection, $table, $extra_fields, $is_enabled);
         }
     }
 
@@ -73,7 +77,7 @@ class NViews
     {
         if (!array_key_exists($name, self::$streams)) {
             if (self::$allow_lazy_stream_creation) {
-                self::addStream($name, self::$default_pdo_connection, self::$default_table);
+                self::addStream($name, self::$default_pdo_connection, self::$default_table, [], self::$is_enabled);
             } else{
                 throw new RuntimeException(__CLASS__ . '->' . __METHOD__ . " reports: {$name} stream not created before and lazy creation disabled");
             }
