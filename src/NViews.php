@@ -3,7 +3,7 @@
 namespace AJUR\FSNews;
 
 use AJUR\FSNews\NViews\Logger;
-use http\Exception\RuntimeException;
+use RuntimeException;
 use PDO;
 
 /**
@@ -17,23 +17,23 @@ class NViews
     private static $streams = [];
 
     /**
-     * @var PDO
+     * @var
      */
     private static $default_pdo_connection;
 
     /**
      * @var string
      */
-    private static $default_table;
+    private static string $default_table;
 
-    private static $allow_lazy_stream_creation = false;
+    private static bool $allow_lazy_stream_creation = false;
 
-    private static $is_enabled = true;
+    private static bool $is_enabled = true;
 
     /**
      * Инициализирует значения по-умолчанию для системы статистики
      *
-     * @param null $default_pdo_connection
+     * @param $default_pdo_connection
      * @param string $default_table
      * @param bool $allow_lazy_stream_creation
      * @param bool $is_enabled (global is_enabled)
@@ -51,9 +51,10 @@ class NViews
      * Создает "поток" логгирования в определенную таблицу и PDO-коннекшен.
      *
      * @param string $name - имя потока (по умолчанию 'default')
-     * @param $pdo_connection - БД
+     * @param null $pdo_connection - БД
      * @param string $table
      * @param array $extra_fields
+     * @param bool $is_enabled
      * @return void
      */
     public static function addStream(string $name = 'default', $pdo_connection = null, string $table = '', array $extra_fields = [], bool $is_enabled = true)

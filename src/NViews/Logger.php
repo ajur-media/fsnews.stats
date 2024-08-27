@@ -5,9 +5,9 @@ namespace AJUR\FSNews\NViews;
 class Logger
 {
     private $pdo;
-    private $table;
-    private $extra_fields;
-    private $is_enabled_stream;
+    private string $table;
+    private array $extra_fields;
+    private bool $is_enabled_stream;
 
     public string $last_sql_query = '';
     public array $last_sql_conditions = [];
@@ -16,6 +16,7 @@ class Logger
      * @param $pdo_connection
      * @param string $table
      * @param array $extra_fields
+     * @param bool $is_enabled
      */
     public function __construct($pdo_connection, string $table = '', array $extra_fields = [], bool $is_enabled = true)
     {
@@ -49,20 +50,24 @@ class Logger
             if (false === \strtotime($date)) {
                 throw new \RuntimeException(__CLASS__ . '->' . __METHOD__ . " incorrect date: {$date}");
             }
+            $date = "'{$date}'";
         }
 
         if (!$this->is_enabled_stream) {
             return false;
         }
 
+        //@todo: сначала мержим (если есть экстра-поля), потом делаем array_map, потом implode
+        // так мы избавимся от лишнего кода (1.99.1+)
+
         if (!empty($this->extra_fields) || !empty($extra_fields)) {
             $set = \array_merge([
                 "item_id"       =>  ":item_id",
                 "event_count"   =>  1,
-                "event_date"    =>  "{$date}"
+                "event_date"    =>  $date
             ], $this->extra_fields, $extra_fields);
 
-            $set = \array_map(static function($key, $value) {
+            $set = \array_map(function($key, $value) {
                 return "{$key} = {$value}";
             }, \array_keys($set), \array_values($set));
 
@@ -74,11 +79,10 @@ class Logger
             ];
         }
 
-        $this->last_sql_query
-            = " INSERT INTO {$this->table} SET "
-            . implode(', ', $set)
-            . " ON DUPLICATE KEY UPDATE "
-            . " event_count = event_count + 1 ;";
+        $this->last_sql_query = vsprintf("INSERT INTO %s SET %s ON DUPLICATE KEY UPDATE event_count = event_count + 1 ;", [
+            $this->table,
+            implode(', ', $set)
+        ]);
 
         $this->last_sql_conditions = [
             'item_id'   =>  $item_id,
