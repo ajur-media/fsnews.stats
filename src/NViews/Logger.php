@@ -50,6 +50,7 @@ class Logger
             if (false === \strtotime($date)) {
                 throw new \RuntimeException(__CLASS__ . '->' . __METHOD__ . " incorrect date: {$date}");
             }
+            // escape DATE string with quotes
             $date = "'{$date}'";
         }
 
@@ -57,31 +58,27 @@ class Logger
             return false;
         }
 
-        //@todo: сначала мержим (если есть экстра-поля), потом делаем array_map, потом implode
-        // так мы избавимся от лишнего кода (1.99.1+)
+        // default columns
+        $set = [
+            "item_id"       =>  ":item_id",
+            "event_count"   =>  1,
+            "event_date"    =>  $date
+        ];
 
+        // extend default columns with extra fields
         if (!empty($this->extra_fields) || !empty($extra_fields)) {
-            $set = \array_merge([
-                "item_id"       =>  ":item_id",
-                "event_count"   =>  1,
-                "event_date"    =>  $date
-            ], $this->extra_fields, $extra_fields);
-
-            $set = \array_map(function($key, $value) {
-                return "{$key} = {$value}";
-            }, \array_keys($set), \array_values($set));
-
-        } else {
-            $set = [
-                "item_id = :item_id",
-                "event_count = 1",
-                "event_date = {$date}"
-            ];
+            $set = \array_merge($set, $this->extra_fields, $extra_fields);
         }
 
-        $this->last_sql_query = vsprintf("INSERT INTO %s SET %s ON DUPLICATE KEY UPDATE event_count = event_count + 1 ;", [
+        // convert set of pairs to set of stringed pairs
+        $set = \array_map(static function($key, $value) {
+            return "{$key} = {$value}";
+        }, \array_keys($set), \array_values($set));
+
+        // make SQL query
+        $this->last_sql_query = \vsprintf("INSERT INTO %s SET %s ON DUPLICATE KEY UPDATE event_count = event_count + 1;", [
             $this->table,
-            implode(', ', $set)
+            \implode(', ', $set)
         ]);
 
         $this->last_sql_conditions = [
